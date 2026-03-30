@@ -23,29 +23,39 @@ jobs:
         unzip -q gradle-8.7-bin.zip
         echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-    - name: Setup local.properties with correct SDK path
+    - name: Find and configure Android SDK
       run: |
-        SDK_PATH=$(dirname $(dirname $(which sdkmanager 2>/dev/null || echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager")))
-        SDK_PATH=$(echo $SDK_PATH | sed 's|/cmdline-tools/latest||')
-        echo "sdk.dir=$SDK_PATH" > local.properties
-        echo "SDK path: $SDK_PATH"
+        # البحث عن Android SDK في كل الأماكن المحتملة
+        for SDK in /usr/local/lib/android/sdk /home/runner/android-sdk $ANDROID_SDK_ROOT $ANDROID_HOME; do
+          if [ -d "$SDK/platforms" ]; then
+            REAL_SDK="$SDK"
+            break
+          fi
+        done
+        echo "Real SDK: $REAL_SDK"
+        
+        # كتابة local.properties
+        echo "sdk.dir=$REAL_SDK" > local.properties
         cat local.properties
-        ls $SDK_PATH/platforms/ 2>/dev/null || true
-
-    - name: Install SDK components
-      run: |
-        SDK_PATH=$(cat local.properties | cut -d= -f2)
-        yes | $SDK_PATH/cmdline-tools/latest/bin/sdkmanager \
+        
+        # تثبيت المكونات المطلوبة
+        yes | $REAL_SDK/cmdline-tools/latest/bin/sdkmanager \
           "platforms;android-34" \
-          "build-tools;34.0.0" 2>&1 | tail -5
+          "build-tools;34.0.0" \
+          --sdk_root=$REAL_SDK 2>&1 | tail -3
 
     - name: Build APK
       run: |
-        unset ANDROID_HOME
-        unset ANDROID_SDK_ROOT
-        gradle assembleDebug --no-daemon 2>&1
+        # إزالة كل متغيرات Android المتعارضة
+        unset ANDROID_HOME ANDROID_SDK_ROOT
+        gradle assembleDebug --no-daemon --stacktrace 2>&1 | tail -30
+
+    - name: Find APK
+      if: always()
+      run: find . -name "*.apk" 2>/dev/null || echo "No APK found"
 
     - name: Upload APK
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: KingFile-v7-APK
