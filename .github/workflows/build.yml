@@ -18,33 +18,41 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Install Gradle 8.4
+    - name: Configure SDK + Gradle
       run: |
-        wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip
-        unzip -q gradle-8.4-bin.zip
-        echo "$PWD/gradle-8.4/bin" >> $GITHUB_PATH
-
-    - name: Configure SDK
-      run: |
+        # SDK path
         SDK=/usr/local/lib/android/sdk
         echo "sdk.dir=$SDK" > local.properties
+        
+        # تثبيت platform-33
         yes | $SDK/cmdline-tools/latest/bin/sdkmanager \
           "platforms;android-33" "build-tools;33.0.2" \
           --sdk_root=$SDK 2>&1 | tail -3
+        
+        # تحميل Gradle مباشرة
+        wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
+        unzip -q /tmp/gradle.zip -d /tmp/
+        export PATH="/tmp/gradle-8.4/bin:$PATH"
+        echo "/tmp/gradle-8.4/bin" >> $GITHUB_PATH
+        gradle --version
 
     - name: Build APK
       run: |
         unset ANDROID_HOME ANDROID_SDK_ROOT
-        gradle assembleDebug \
+        /tmp/gradle-8.4/bin/gradle assembleDebug \
           --no-daemon \
           --no-build-cache \
           --no-configuration-cache \
+          -Dorg.gradle.caching=false \
           2>&1
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
+    - name: Verify and Upload APK
+      run: |
+        find . -name "*.apk" -exec ls -lh {} \;
+        
+    - uses: actions/upload-artifact@v4
       with:
-        name: KingFile-v7
+        name: KingFile-v7-APK
         path: app/build/outputs/apk/debug/app-debug.apk
         retention-days: 90
         if-no-files-found: error
