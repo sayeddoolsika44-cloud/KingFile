@@ -22,27 +22,20 @@ jobs:
       with:
         gradle-version: '8.4'
 
-    - name: Check files
-      run: |
-        echo "=== Project structure ==="
-        find . -name "*.kt" -o -name "*.xml" -o -name "*.gradle" | head -30
-        echo "=== build.gradle ==="
-        cat app/build.gradle
-
     - name: Build APK
-      run: |
-        gradle assembleDebug \
-          --no-daemon \
-          --info \
-          2>&1 | grep -E "(ERROR|error:|FAILED|warning:|BUILD)" | head -50
+      run: gradle assembleDebug --no-daemon 2>&1
 
-    - name: Build APK Full
-      run: gradle assembleDebug --no-daemon --stacktrace 2>&1 | tail -100
+    - name: Check output
+      run: |
+        echo "=== Build outputs ==="
+        find . -name "*.apk" 2>/dev/null || echo "No APK found"
+        echo "=== Build dir ==="
+        ls -la app/build/outputs/ 2>/dev/null || echo "No outputs dir"
 
     - name: Upload APK
-      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: KingFile-v7-APK
         path: app/build/outputs/apk/debug/app-debug.apk
         retention-days: 90
+        if-no-files-found: warn
