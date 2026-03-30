@@ -22,15 +22,20 @@ jobs:
       with:
         gradle-version: '8.4'
 
-    - name: Build APK
-      run: gradle assembleDebug --no-daemon 2>&1
-
-    - name: Check output
+    - name: Build APK (with full error output)
       run: |
-        echo "=== Build outputs ==="
-        find . -name "*.apk" 2>/dev/null || echo "No APK found"
-        echo "=== Build dir ==="
-        ls -la app/build/outputs/ 2>/dev/null || echo "No outputs dir"
+        set +e
+        gradle assembleDebug --no-daemon --stacktrace 2>&1
+        EXIT_CODE=$?
+        echo "Exit code: $EXIT_CODE"
+        if [ $EXIT_CODE -ne 0 ]; then
+          echo "=== BUILD FAILED ==="
+          exit $EXIT_CODE
+        fi
+      continue-on-error: false
+
+    - name: Find APK
+      run: find . -name "*.apk" -type f -exec ls -lh {} \;
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
@@ -38,4 +43,3 @@ jobs:
         name: KingFile-v7-APK
         path: app/build/outputs/apk/debug/app-debug.apk
         retention-days: 90
-        if-no-files-found: warn
