@@ -5,6 +5,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,28 +19,31 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - uses: android-actions/setup-android@v3
-
-    - uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: '8.4'
-
-    - name: Build APK (with full error output)
+    - name: Setup Android SDK manually
       run: |
-        set +e
-        gradle assembleDebug --no-daemon --stacktrace 2>&1
-        EXIT_CODE=$?
-        echo "Exit code: $EXIT_CODE"
-        if [ $EXIT_CODE -ne 0 ]; then
-          echo "=== BUILD FAILED ==="
-          exit $EXIT_CODE
-        fi
-      continue-on-error: false
+        echo "y" | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager \
+          "platforms;android-34" \
+          "build-tools;34.0.0" \
+          "platform-tools" 2>&1 | tail -5
 
-    - name: Find APK
-      run: find . -name "*.apk" -type f -exec ls -lh {} \;
+    - uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: '8.7'
+
+    - name: Build APK
+      run: |
+        gradle assembleDebug \
+          --no-daemon \
+          --stacktrace \
+          --info \
+          -PANDROID_HOME=$ANDROID_HOME \
+          2>&1
+      env:
+        ANDROID_HOME: ${{ env.ANDROID_HOME }}
+        JAVA_HOME: ${{ env.JAVA_HOME }}
 
     - name: Upload APK
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: KingFile-v7-APK
