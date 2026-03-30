@@ -23,39 +23,21 @@ jobs:
         unzip -q gradle-8.7-bin.zip
         echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-    - name: Install Android SDK
+    - name: Install SDK platforms
       run: |
-        sudo apt-get install -y wget unzip
-        # Android SDK موجود في runner
-        echo "ANDROID_HOME=$ANDROID_HOME"
-        ls $ANDROID_HOME/
-        # تثبيت platform 34
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+        yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
           "platforms;android-34" \
-          "build-tools;34.0.0" \
-          --sdk_root=$ANDROID_HOME 2>&1 | tail -3
+          "build-tools;34.0.0" 2>&1 | tail -3
 
     - name: Build APK
       run: |
-        gradle assembleDebug \
-          --no-daemon \
-          --project-dir . \
-          --stacktrace \
-          2>&1
+        # استخدام ANDROID_SDK_ROOT فقط — إزالة ANDROID_HOME المتعارض
+        unset ANDROID_HOME
+        gradle assembleDebug --no-daemon --stacktrace 2>&1
       env:
-        ANDROID_HOME: ${{ env.ANDROID_HOME }}
-        JAVA_HOME: ${{ env.JAVA_HOME }}
-
-    - name: Show outputs
-      if: always()
-      run: |
-        echo "=== APK files ==="
-        find . -name "*.apk" 2>/dev/null || echo "none"
-        echo "=== Build dir ==="
-        ls -la app/build/outputs/ 2>/dev/null || echo "no outputs"
+        ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
 
     - name: Upload APK
-      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: KingFile-v7-APK
