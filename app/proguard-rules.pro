@@ -1,0 +1,4 @@
+-keepattributes *Annotation*
+-keep class com.doolsjka.kingfile.** { *; }
+-keep class androidx.media3.** { *; }
+-dontwarn androidx.media3.**

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">King File</string>
+    <string name="owner">D̑̈ooꪶ丂ʝꓘα</string>
+    <string name="copyright">© 2026 D̑̈ooꪶ丂ʝꓘα · All Rights Reserved · GPL-3.0 · v7.0.0</string>
+    <string name="start_king">Start King</string>
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_media">الوسائط</string>
+    <string name="nav_browser">المتصفح</string>
+    <string name="nav_files">الملفات</string>
+    <string name="nav_tools">الأدوات</string>
+</resources>
