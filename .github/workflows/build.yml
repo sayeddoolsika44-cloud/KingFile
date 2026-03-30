@@ -19,28 +19,30 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Android SDK manually
+    - name: Setup Android SDK
       run: |
-        echo "y" | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager \
-          "platforms;android-34" \
-          "build-tools;34.0.0" \
-          "platform-tools" 2>&1 | tail -5
+        echo "ANDROID_HOME=$ANDROID_HOME"
+        echo "Available SDK:"
+        ls $ANDROID_HOME/platforms/ 2>/dev/null || echo "No platforms"
+        ls $ANDROID_HOME/build-tools/ 2>/dev/null || echo "No build-tools"
 
-    - uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-version: '8.7'
+    - name: Install Android SDK components
+      run: |
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+          "platforms;android-34" \
+          "build-tools;34.0.0" 2>&1 | grep -E "(Downloading|Installing|done)" || true
+
+    - name: Make gradlew executable
+      run: chmod +x gradlew
 
     - name: Build APK
-      run: |
-        gradle assembleDebug \
-          --no-daemon \
-          --stacktrace \
-          --info \
-          -PANDROID_HOME=$ANDROID_HOME \
-          2>&1
+      run: ./gradlew assembleDebug --no-daemon --stacktrace 2>&1
       env:
         ANDROID_HOME: ${{ env.ANDROID_HOME }}
-        JAVA_HOME: ${{ env.JAVA_HOME }}
+
+    - name: List outputs
+      if: always()
+      run: find . -name "*.apk" 2>/dev/null && echo "Found APK" || echo "No APK"
 
     - name: Upload APK
       if: success()
