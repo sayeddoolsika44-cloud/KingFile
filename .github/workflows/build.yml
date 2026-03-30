@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
 
@@ -18,39 +17,28 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Configure SDK + Gradle
+    - name: Configure SDK
       run: |
-        # SDK path
         SDK=/usr/local/lib/android/sdk
         echo "sdk.dir=$SDK" > local.properties
-        
-        # تثبيت platform-33
         yes | $SDK/cmdline-tools/latest/bin/sdkmanager \
-          "platforms;android-33" "build-tools;33.0.2" \
+          "platforms;android-34" \
+          "build-tools;34.0.0" \
           --sdk_root=$SDK 2>&1 | tail -3
-        
-        # تحميل Gradle مباشرة
-        wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
-        unzip -q /tmp/gradle.zip -d /tmp/
-        export PATH="/tmp/gradle-8.4/bin:$PATH"
-        echo "/tmp/gradle-8.4/bin" >> $GITHUB_PATH
-        gradle --version
 
     - name: Build APK
       run: |
+        wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip
+        unzip -q gradle-8.4-bin.zip
         unset ANDROID_HOME ANDROID_SDK_ROOT
-        /tmp/gradle-8.4/bin/gradle assembleDebug \
+        ./gradle-8.4/bin/gradle assembleDebug \
           --no-daemon \
           --no-build-cache \
           --no-configuration-cache \
-          -Dorg.gradle.caching=false \
           2>&1
 
-    - name: Verify and Upload APK
-      run: |
-        find . -name "*.apk" -exec ls -lh {} \;
-        
-    - uses: actions/upload-artifact@v4
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
       with:
         name: KingFile-v7-APK
         path: app/build/outputs/apk/debug/app-debug.apk
