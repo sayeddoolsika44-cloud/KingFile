@@ -1,4 +1,5 @@
 package com.doolsjka.kingfile.ui;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -6,12 +7,12 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.*;
 import android.widget.FrameLayout;
 import android.Manifest;
-import android.content.pm.PackageManager;
 
 @SuppressLint("SetJavaScriptEnabled")
 public class MainActivity extends Activity {
@@ -65,7 +66,7 @@ public class MainActivity extends Activity {
         s.setDisplayZoomControls(false);
         s.setGeolocationEnabled(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString("KingFile/7.0 D\u1111\u0308oo\ua9b6\u4e02\u02b0\ua4e9");
+        s.setUserAgentString("KingFile/7.0");
         if (Build.VERSION.SDK_INT >= 19) WebView.setWebContentsDebuggingEnabled(false);
         webView.setWebViewClient(new KingWebViewClient());
         webView.setWebChromeClient(new KingChromeClient(this));
