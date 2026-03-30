@@ -23,41 +23,40 @@ jobs:
         unzip -q gradle-8.7-bin.zip
         echo "$PWD/gradle-8.7/bin" >> $GITHUB_PATH
 
-    - name: Find and configure Android SDK
+    - name: Configure Android SDK
       run: |
-        # البحث عن Android SDK في كل الأماكن المحتملة
-        for SDK in /usr/local/lib/android/sdk /home/runner/android-sdk $ANDROID_SDK_ROOT $ANDROID_HOME; do
+        for SDK in /usr/local/lib/android/sdk /home/runner/android-sdk $ANDROID_SDK_ROOT; do
           if [ -d "$SDK/platforms" ]; then
             REAL_SDK="$SDK"
             break
           fi
         done
-        echo "Real SDK: $REAL_SDK"
-        
-        # كتابة local.properties
         echo "sdk.dir=$REAL_SDK" > local.properties
-        cat local.properties
-        
-        # تثبيت المكونات المطلوبة
         yes | $REAL_SDK/cmdline-tools/latest/bin/sdkmanager \
-          "platforms;android-34" \
-          "build-tools;34.0.0" \
+          "platforms;android-34" "build-tools;34.0.0" \
           --sdk_root=$REAL_SDK 2>&1 | tail -3
 
     - name: Build APK
       run: |
-        # إزالة كل متغيرات Android المتعارضة
         unset ANDROID_HOME ANDROID_SDK_ROOT
-        gradle assembleDebug --no-daemon --stacktrace 2>&1 | tail -30
+        gradle assembleDebug --no-daemon 2>&1 | tail -20
 
-    - name: Find APK
-      if: always()
-      run: find . -name "*.apk" 2>/dev/null || echo "No APK found"
+    - name: Verify APK exists
+      run: |
+        APK=$(find . -name "app-debug.apk" 2>/dev/null | head -1)
+        echo "APK path: $APK"
+        if [ -z "$APK" ]; then
+          echo "ERROR: APK not found!"
+          find . -name "*.apk" 2>/dev/null || echo "No APK at all"
+          exit 1
+        fi
+        ls -lh $APK
+        echo "APK_PATH=$APK" >> $GITHUB_ENV
 
     - name: Upload APK
-      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: KingFile-v7-APK
-        path: app/build/outputs/apk/debug/app-debug.apk
+        path: ${{ env.APK_PATH }}
         retention-days: 90
+        if-no-files-found: error
